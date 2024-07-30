@@ -1,0 +1,65 @@
+-- Create Books Table
+CREATE TABLE Books (
+    book ID INT PRIMARY KEY AUTO_INCREMENT,
+    Title VARCHAR(255) NOT NULL,
+    Author VARCHAR(255) NOT NULL,
+    Genre VARCHAR(255),
+    PublishDate DATE,
+    ISBN VARCHAR(20) UNIQUE,
+    CopiesAvailable INT DEFAULT 1
+);
+
+-- Create Members Table
+CREATE TABLE Members (
+    MemberID INT PRIMARY KEY AUTO_INCREMENT,
+    FirstName VARCHAR(100) NOT NULL,
+    LastName VARCHAR(100) NOT NULL,
+    DateOfBirth DATE,
+    Email VARCHAR(255) UNIQUE,
+    PhoneNumber VARCHAR(20),
+    MembershipDate DATE DEFAULT CURRENT_DATE
+);
+
+-- Create Transaction Table
+CREATE TABLE Transactions (
+    TransactionID INT PRIMARY KEY AUTO_INCREMENT,
+    BookID INT,
+    MemberID INT,
+    CheckoutDate DATE DEFAULT CURRENT_DATE,
+    ReturnDate DATE,
+    FOREIGN KEY (BookID) REFERENCES Books(BookID),
+    FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
+);
+
+-- Example Insert Statements
+-- Insert Books
+INSERT INTO Books (Title, Author, Genre, PublishDate, ISBN, CopiesAvailable)
+VALUES ('To Kill a Mockingbird', 'Harper Lee', 'Fiction', '1960-07-11', '9780060935467', 3);
+
+-- Insert Members
+INSERT INTO Members (FirstName, LastName, DateOfBirth, Email, PhoneNumber)
+VALUES ('John', 'Doe', '1985-05-15', 'john.doe@example.com', '555-1234');
+
+-- Insert Transactions
+INSERT INTO Transactions (BookID, MemberID, CheckoutDate)
+VALUES (1, 1, '2024-07-30');
+
+-- Find all books checked out by a member:
+SELECT B.Title, T.CheckoutDate, T.ReturnDate
+FROM Transactions T
+JOIN Books B ON T.BookID = B.BookID
+WHERE T.MemberID = 1;
+
+-- Find Available Books:
+SELECT Title, Author, CopiesAvailable
+FROM Books
+WHERE CopiesAvailable > 0;
+
+-- Return a Book:
+UPDATE Transactions
+SET ReturnDate = CURRENT_DATE
+WHERE BookID = 1 AND MemberID = 1 AND ReturnDate IS NULL;
+
+UPDATE Books
+SET CopiesAvailable = CopiesAvailable + 1
+WHERE BookID = 1;
