@@ -1,0 +1,113 @@
+SELECT
+    i.name1 AS ItemName,
+    i.displayID AS ItemModelID,
+    l.percentchance AS DropChance,
+    l.heroicpercentchance AS HeroicDropChance,
+    l.mincount AS MinCount,
+    l.maxcount AS MaxCount
+FROM
+    items i
+JOIN
+    itemloot l ON i.class = l.itemid;
+
+SELECT
+    c.faction AS Faction,
+    MIN(c.minhealth) AS MinHealth,
+    MAX(c.maxhealth) AS MaxHealth,
+    MIN(c.mindamage) AS MinDamage,
+    MAX(c.maxdamage) AS MaxDamage
+FROM
+    creature_proto c
+GROUP BY
+    c.faction;
+
+SELECT
+    c.faction AS Faction,
+    MIN(c.minhealth) AS MinHealth,
+    MAX(c.maxhealth) AS MaxHealth,
+    MIN(c.mindamage) AS MinDamage,
+    MAX(c.maxdamage) AS MaxDamage
+FROM
+    creature_proto c
+GROUP BY
+    c.faction;
+
+SELECT
+    i.name1 AS ItemName,
+    v.amount AS QuantityAvailable,
+    v.venderGuid AS VendorID
+FROM
+    items i
+JOIN
+    vendors v ON i.displayID = v.itemGuid;
+
+SELECT
+    p.race AS Race,
+    p.factiontemplate AS FactionTemplate,
+    p.positionX AS StartX,
+    p.positionY AS StartY,
+    p.positionZ AS StartZ
+FROM
+    playercreateinfo p
+WHERE
+    p.mapid = 0;  -- Eastern Kingdoms
+
+SELECT
+    z.ZoneID AS ZoneID,
+    w.effect AS WeatherEffect
+FROM
+    weather w
+JOIN
+    zones z ON w.ZoneID = z.ZoneID;
+
+SELECT
+    i.name1 AS ItemName,
+    l.percentchance AS DropChance
+FROM
+    items i
+JOIN
+    itemloot l ON i.class = l.itemid
+ORDER BY
+    l.percentchance DESC
+LIMIT 10;
+
+SELECT
+    n.entry AS NPCID,
+    n.event AS EventType,
+    n.text0 AS Text0,
+    n.text1 AS Text1,
+    n.text2 AS Text2,
+    n.text3 AS Text3,
+    n.text4 AS Text4
+FROM
+    npc_monstersay n
+ORDER BY
+    n.event, n.chance DESC;
+
+SELECT
+    p.race AS Race,
+    p.class AS Class,
+    i.slot_id AS ItemSlot,
+    i.amount AS ItemAmount,
+    s.skillid AS SkillID,
+    s.level AS SkillLevel
+FROM
+    playercreateinfo p
+JOIN
+    playercreateinfo_items i ON p.race = i.slot_id
+JOIN
+    playercreateinfo_skills s ON p.class = s.skillid;
+
+SELECT
+    a.item AS ItemID,
+    i.name1 AS ItemName,
+    a.bid AS HighestBid,
+    a.owner AS OwnerName,
+    a.bidder AS HighestBidder
+FROM
+    auctions a
+JOIN
+    items i ON a.item = i.class
+ORDER BY
+    a.bid DESC
+LIMIT 10;
