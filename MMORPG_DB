@@ -1,0 +1,568 @@
+-- AI Agents Table
+CREATE TABLE AiAgents (
+    entryId INT PRIMARY KEY,
+    AI_AGENT TINYINT NOT NULL,
+    procEvent TINYINT NOT NULL,
+    procChance INT NOT NULL,
+    procCount INT NOT NULL,
+    spellId INT,
+    spellType TINYINT,
+    spellTargetType TINYINT,
+    spellCooldown INT
+);
+
+-- Area Triggers Table
+CREATE TABLE AreaTriggers (
+    AreaTriggerID INT PRIMARY KEY,
+    Type TINYINT NOT NULL,
+    MapID INT NOT NULL,
+    Name VARCHAR(255),
+    X FLOAT NOT NULL,
+    Y FLOAT NOT NULL,
+    Z FLOAT NOT NULL,
+    O FLOAT NOT NULL,
+    Required_Honor_Rank INT,
+    Required_Level INT
+);
+
+-- Auction House Table
+CREATE TABLE AuctionHouse (
+    entryID INT PRIMARY KEY,
+    auctioneer VARCHAR(255),
+    AHid INT
+);
+
+-- Command Overrides Table
+CREATE TABLE CommandOverrides (
+    command_name VARCHAR(255) PRIMARY KEY,
+    access_level INT NOT NULL
+);
+
+-- Creature Formations Table
+CREATE TABLE CreatureFormations (
+    creature_sqlid INT PRIMARY KEY,
+    followtarget_sqlid INT,
+    follow_angle FLOAT,
+    follow_dist FLOAT
+);
+
+-- Creature Names Table
+CREATE TABLE CreatureNames (
+    entry INT PRIMARY KEY,
+    creature_name VARCHAR(255),
+    subname VARCHAR(255),
+    Flags1 INT,
+    type TINYINT,
+    family TINYINT,
+    rank TINYINT,
+    male_displayId INT,
+    female_displayId INT,
+    Civilian TINYINT,
+    Leader TINYINT
+);
+
+-- Creature Proto Table
+CREATE TABLE CreatureProto (
+    entry INT PRIMARY KEY,
+    minlevel INT NOT NULL,
+    maxlevel INT NOT NULL,
+    faction INT,
+    minhealth INT,
+    maxhealth INT,
+    mana INT,
+    scale FLOAT,
+    npcflags INT,
+    attacktime INT,
+    mindamage INT,
+    maxdamage INT,
+    rangedattacktime INT,
+    rangedmindamage INT,
+    rangedmaxdamage INT,
+    mountdisplayid INT,
+    item1slotdisplay INT,
+    item2slotdisplay INT,
+    item3slotdisplay INT,
+    respawntime INT,
+    resistance0_armor INT,
+    resistance1 INT,
+    resistance2 INT,
+    resistance3 INT,
+    resistance4 INT,
+    resistance5 INT,
+    resistance6 INT,
+    combat_reach FLOAT,
+    bonding_radius FLOAT,
+    auras TEXT,
+    boss TINYINT,
+    money INT
+);
+
+-- Creature Quest Finisher Table
+CREATE TABLE CreatureQuestFinisher (
+    id INT PRIMARY KEY,
+    quest INT NOT NULL
+);
+
+-- Creature Quest Starter Table
+CREATE TABLE CreatureQuestStarter (
+    id INT PRIMARY KEY,
+    quest INT NOT NULL
+);
+
+-- Creature Spawns Table
+CREATE TABLE CreatureSpawns (
+    id INT PRIMARY KEY,
+    entry INT NOT NULL,
+    map INT NOT NULL,
+    X FLOAT NOT NULL,
+    Y FLOAT NOT NULL,
+    Z FLOAT NOT NULL,
+    O FLOAT NOT NULL,
+    movetype TINYINT,
+    displayid INT,
+    factionID INT,
+    emote_state TINYINT
+);
+
+-- Creature Static Spawn Table
+CREATE TABLE CreatureStaticSpawn (
+    id INT PRIMARY KEY,
+    entry INT NOT NULL,
+    map INT NOT NULL,
+    X FLOAT NOT NULL,
+    Y FLOAT NOT NULL,
+    Z FLOAT NOT NULL,
+    O FLOAT NOT NULL,
+    movetype TINYINT,
+    displayid INT,
+    factionID INT,
+    emote_state TINYINT
+);
+
+-- Creature Waypoints Table
+CREATE TABLE CreatureWaypoints (
+    creatureid INT,
+    waypointid INT,
+    X FLOAT,
+    Y FLOAT,
+    Z FLOAT,
+    waittime INT,
+    PRIMARY KEY (creatureid, waypointid)
+);
+
+-- Creature Loot Table
+CREATE TABLE CreatureLoot (
+    entryid INT,
+    itemid INT,
+    percentchance FLOAT,
+    heroicpercentchance FLOAT,
+    mincount INT,
+    maxcount INT,
+    PRIMARY KEY (entryid, itemid)
+);
+
+-- Fishing Table
+CREATE TABLE Fishing (
+    zone INT PRIMARY KEY,
+    MinSkill INT NOT NULL,
+    MaxSkill INT NOT NULL
+);
+
+-- Fishing Loot Table
+CREATE TABLE FishingLoot (
+    entryid INT,
+    itemid INT,
+    percentchance FLOAT,
+    heroicpercentchance FLOAT,
+    mincount INT,
+    maxcount INT,
+    PRIMARY KEY (entryid, itemid)
+);
+
+-- Game Objects Table
+CREATE TABLE GameObjectNames (
+    type TINYINT PRIMARY KEY,
+    displayID INT NOT NULL,
+    name VARCHAR(255) NOT NULL
+);
+
+-- Game Object Quest Finisher Table
+CREATE TABLE GameObjectQuestFinisher (
+    id INT PRIMARY KEY,
+    quest INT NOT NULL
+);
+
+-- Game Object Quest Item Binding Table
+CREATE TABLE GameObjectQuestItemBinding (
+    gameobject_entry INT,
+    quest_id INT,
+    item_id INT,
+    item_count INT,
+    PRIMARY KEY (gameobject_entry, quest_id, item_id)
+);
+
+-- Game Object Quest Pickup Binding Table
+CREATE TABLE GameObjectQuestPickupBinding (
+    gameobject_entry INT,
+    quest_id INT,
+    required_count INT,
+    PRIMARY KEY (gameobject_entry, quest_id)
+);
+
+-- Game Object Quest Starter Table
+CREATE TABLE GameObjectQuestStarter (
+    id INT PRIMARY KEY,
+    quest INT NOT NULL
+);
+
+-- Game Object Spawns Table
+CREATE TABLE GameObjectSpawns (
+    entry INT PRIMARY KEY,
+    map INT NOT NULL,
+    X FLOAT NOT NULL,
+    Y FLOAT NOT NULL,
+    Z FLOAT NOT NULL,
+    Facing FLOAT NOT NULL,
+    Faction INT,
+    Scale FLOAT
+);
+
+-- ai_agents Table
+CREATE TABLE ai_agents (
+    entryId INT PRIMARY KEY,
+    AI_AGENT INT CHECK (AI_AGENT BETWEEN 1 AND 5),
+    procEvent INT CHECK (procEvent BETWEEN 0 AND 16),
+    procChance FLOAT,
+    procCount INT,
+    spellId INT,
+    spellType INT CHECK (spellType BETWEEN 1 AND 11),
+    spellTargetType INT CHECK (spellTargetType BETWEEN 1 AND 3),
+    spellCooldown INT
+);
+
+-- area_triggers Table
+CREATE TABLE area_triggers (
+    AreaTriggerID INT PRIMARY KEY,
+    Type INT CHECK (Type IN (0, 1)),
+    MapID INT,
+    Name VARCHAR(255),
+    X FLOAT,
+    Y FLOAT,
+    Z FLOAT,
+    O FLOAT,
+    Required_Honor_Rank INT,
+    Required_Level INT
+);
+
+-- auction_house Table
+CREATE TABLE auction_house (
+    entryID INT PRIMARY KEY,
+    auctioneer VARCHAR(255),
+    AHid INT
+);
+
+-- command_overrides Table
+CREATE TABLE command_overrides (
+    command_name VARCHAR(255),
+    access_level INT
+);
+
+-- creature_formations Table
+CREATE TABLE creature_formations (
+    creature_sqlid INT,
+    followtarget_sqlid INT,
+    follow_angle FLOAT,
+    follow_dist FLOAT
+);
+
+-- creature_names Table
+CREATE TABLE creature_names (
+    entry INT PRIMARY KEY,
+    creature_name VARCHAR(255),
+    subname VARCHAR(255),
+    Flags1 INT,
+    type INT CHECK (type BETWEEN 1 AND 11),
+    family INT CHECK (family BETWEEN 1 AND 35),
+    rank INT CHECK (rank BETWEEN 0 AND 4),
+    male_displayId INT,
+    female_displayId INT,
+    Civilian INT CHECK (Civilian IN (0, 1)),
+    Leader INT CHECK (Leader IN (0, 1))
+);
+
+-- creature_proto Table
+CREATE TABLE creature_proto (
+    entry INT PRIMARY KEY,
+    minlevel INT,
+    maxlevel INT,
+    faction INT,
+    minhealth INT,
+    maxhealth INT,
+    mana INT,
+    scale FLOAT,
+    npcflags INT,
+    attacktime INT,
+    mindamage INT,
+    maxdamage INT,
+    rangedattacktime INT,
+    rangedmindamage INT,
+    rangedmaxdamage INT,
+    mountdisplayid INT,
+    item1slotdisplay INT,
+    item2slotdisplay INT,
+    item3slotdisplay INT,
+    respawntime INT,
+    resistance0_armor INT,
+    resistance1 INT,
+    resistance2 INT,
+    resistance3 INT,
+    resistance4 INT,
+    resistance5 INT,
+    resistance6 INT,
+    resistance7 INT
+);
+
+-- graveyards Table
+CREATE TABLE graveyards (
+    id INT PRIMARY KEY,
+    X FLOAT,
+    Y FLOAT,
+    Z FLOAT,
+    O FLOAT,
+    ZoneID INT,
+    AdjacentZoneID INT,
+    MapID INT,
+    Faction INT,
+    Name VARCHAR(255)
+);
+
+-- item_randomprop_groups Table
+CREATE TABLE item_randomprop_groups (
+    radomprops_entryid INT,
+    chance FLOAT
+);
+
+-- item_randomsuffix_group Table
+CREATE TABLE item_randomsuffix_group (
+    randomsuffix_entryid INT,
+    chance FLOAT
+);
+
+-- itemloot Table
+CREATE TABLE itemloot (
+    itemid INT,
+    percentchance FLOAT,
+    heroicpercentchance FLOAT,
+    mincount INT,
+    maxcount INT
+);
+
+-- itempages Table
+CREATE TABLE itempages (
+    itemid INT,
+    page INT
+);
+
+-- items Table
+CREATE TABLE items (
+    class INT,
+    subclass INT,
+    name1 VARCHAR(255),
+    name2 VARCHAR(255),
+    name3 VARCHAR(255),
+    name4 VARCHAR(255),
+    displayID INT,
+    quality INT CHECK (quality BETWEEN 1 AND 6),
+    buy_price INT,
+    sell_price INT,
+    inventorytype INT,
+    allowableclass INT,
+    allowablerace INT,
+    itemlevel INT,
+    requiredlevel INT,
+    requiredPlayerRank INT,
+    requiredFaction INT,
+    requiredFactionStanding INT,
+    unique INT CHECK (unique IN (0, 1)),
+    maxcount INT,
+    containerslots INT,
+    stat_type1 INT,
+    stat_value1 INT,
+    stat_type2 INT,
+    stat_value2 INT,
+    stat_type3 INT,
+    stat_value3 INT,
+    stat_type4 INT,
+    stat_value4 INT,
+    stat_type5 INT,
+    stat_value5 INT,
+    stat_type6 INT,
+    stat_value6 INT,
+    stat_type7 INT,
+    stat_value7 INT,
+    stat_type8 INT,
+    stat_value8 INT,
+    stat_type9 INT,
+    stat_value9 INT,
+    stat_type10 INT,
+    stat_value10 INT,
+    dmg_min INT,
+    dmg_max INT,
+    dmg_type1 INT,
+    dmg_type2 INT,
+    dmg_type3 INT,
+    dmg_type4 INT,
+    dmg_type5 INT,
+    armor INT,
+    res0 INT,
+    res1 INT,
+    res2 INT,
+    res3 INT,
+    res4 INT,
+    res5 INT,
+    res6 INT,
+    res7 INT,
+    ammo_type INT,
+    range FLOAT,
+    questID INT,
+    lockID INT,
+    sheathID INT,
+    randomprop INT,
+    itemset INT,
+    zonenameID INT,
+    MapID INT,
+    socket_color1 INT,
+    socket_color2 INT,
+    socket_color3 INT,
+    socket_bonus INT,
+    reqDisenchantSkill INT
+);
+
+-- lootrandprop Table
+CREATE TABLE lootrandprop (
+    propid INT,
+    percentchance FLOAT
+);
+
+-- npc_monstersay Table
+CREATE TABLE npc_monstersay (
+    entry INT PRIMARY KEY,
+    event INT CHECK (event BETWEEN 0 AND 1),
+    chance FLOAT,
+    language INT,
+    type INT CHECK (type BETWEEN 11 AND 13),
+    text0 TEXT,
+    text1 TEXT,
+    text2 TEXT,
+    text3 TEXT,
+    text4 TEXT
+);
+
+-- playercreateinfo Table
+CREATE TABLE playercreateinfo (
+    race INT CHECK (race BETWEEN 1 AND 11),
+    factiontemplate INT CHECK (factiontemplate BETWEEN 1 AND 1629),
+    class INT CHECK (class BETWEEN 1 AND 11),
+    mapid INT CHECK (mapid IN (0, 1, 530)),
+    zoneid INT,
+    positionX FLOAT,
+    positionY FLOAT,
+    positionZ FLOAT,
+    displayid INT
+);
+
+-- playercreateinfo_items Table
+CREATE TABLE playercreateinfo_items (
+    protoid INT,
+    slot_id INT,
+    amount INT
+);
+
+-- playercreateinfo_skills Table
+CREATE TABLE playercreateinfo_skills (
+    skillid INT,
+    level INT,
+    maxlevel INT
+);
+
+-- Prospectingloot Table
+CREATE TABLE Prospectingloot (
+    entryid INT,
+    itemid INT,
+    percentchance FLOAT,
+    mincount INT,
+    maxcount INT
+);
+
+-- quests Table
+CREATE TABLE quests (
+    zoneid INT,
+    minlevel INT,
+    maxlevel INT,
+    type INT,
+    requiredclass INT,
+    requiredrace INT,
+    requiredrepfaction INT,
+    requiredrepvalue INT,
+    requiredtradeskill INT,
+    limittime INT,
+    Title VARCHAR(255),
+    details TEXT,
+    objectives TEXT
+);
+
+-- recall Table
+CREATE TABLE recall (
+    world_port VARCHAR(255)
+);
+
+-- Spells112 Table
+CREATE TABLE Spells112 (
+    school INT,
+    -- Additional fields to be added here
+);
+
+-- vendors Table
+CREATE TABLE vendors (
+    venderGuid INT,
+    itemGuid INT,
+    amount INT
+);
+
+-- weather Table
+CREATE TABLE weather (
+    ZoneID INT,
+    effect ENUM('none', 'snow', 'rain', 'weakrain')
+);
+
+-- accounts Table
+CREATE TABLE accounts (
+    login VARCHAR(255),
+    password VARCHAR(255),
+    gm INT,
+    banned INT CHECK (banned BETWEEN 0 AND 1),
+    lastlogin DATETIME,
+    lastip VARCHAR(45),
+    email VARCHAR(255),
+    Flags INT CHECK (Flags IN (1, 4, 8))
+);
+
+-- arenateams Table
+CREATE TABLE arenateams (
+    type INT CHECK (type IN (3, 5, 10)),
+    leader INT,
+    name VARCHAR(255),
+    rating INT
+);
+
+-- auctions Table
+CREATE TABLE auctions (
+    auctionhouse INT,
+    item INT,
+    owner VARCHAR(255),
+    buyout INT,
+    time INT,
+    bidder VARCHAR(255),
+    bid INT,
+    deposit INT
+);
