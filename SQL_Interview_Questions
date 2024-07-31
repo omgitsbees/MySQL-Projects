@@ -1,0 +1,446 @@
+-- 1. Calculate the total sales amount for each day of the current month, 
+-- along with a running total of month-to-date sales.
+WITH DailySales AS (
+    SELECT
+        sale_date,
+        SUM(amount) AS daily_total
+    FROM sales
+    WHERE EXTRACT(MONTH FROM sale_date) = EXTRACT(MONTH FROM CURRENT_DATE)
+      AND EXTRACT(YEAR FROM sale_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+    GROUP BY sale_date
+),
+RunningTotal AS (
+    SELECT
+        sale_date,
+        daily_total,
+        SUM(daily_total) OVER (ORDER BY sale_date) AS running_total
+    FROM DailySales
+)
+SELECT
+    sale_date,
+    daily_total,
+    running_total
+FROM RunningTotal
+ORDER BY sale_date;
+
+
+-- 2. Calculate the 7-day moving average of daily visits for each date.
+SELECT
+    visit_date,
+    visit_count,
+    AVG(visit_count) OVER (
+        ORDER BY visit_date
+        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    ) AS moving_average
+FROM daily_visits
+ORDER BY visit_date;
+
+
+-- 3. Calculate the price difference between each product and the next most expensive product in that category.
+WITH RankedProducts AS (
+    SELECT
+        p.product_id,
+        p.product_name,
+        p.category_id,
+        p.price,
+        ROW_NUMBER() OVER (PARTITION BY p.category_id ORDER BY p.price DESC) AS rank
+    FROM products p
+),
+NextExpensive AS (
+    SELECT
+        rp1.product_id,
+        rp1.product_name,
+        rp1.category_id,
+        rp1.price AS current_price,
+        rp2.price AS next_price
+    FROM RankedProducts rp1
+    LEFT JOIN RankedProducts rp2
+        ON rp1.category_id = rp2.category_id
+        AND rp1.rank = rp2.rank - 1
+)
+SELECT
+    product_id,
+    product_name,
+    category_id,
+    current_price,
+    next_price,
+    COALESCE(next_price - current_price, 0) AS price_difference
+FROM NextExpensive
+ORDER BY category_id, current_price DESC;
+
+-- 4. Calculate the cumulative change in stock price compared to the starting price of the year.
+WITH YearlyStart AS (
+    SELECT
+        stock_symbol,
+        EXTRACT(YEAR FROM date) AS year,
+        MIN(date) AS start_date,
+        FIRST_VALUE(closing_price) OVER (PARTITION BY stock_symbol, EXTRACT(YEAR FROM date) ORDER BY date) AS start_price
+    FROM stock_prices
+    GROUP BY stock_symbol, EXTRACT(YEAR FROM date)
+),
+CumulativeChange AS (
+    SELECT
+        sp.date,
+        sp.stock_symbol,
+        sp.closing_price,
+        ys.start_price,
+        sp.closing_price - ys.start_price AS cumulative_change
+    FROM stock_prices sp
+    JOIN YearlyStart ys
+        ON sp.stock_symbol = ys.stock_symbol
+        AND EXTRACT(YEAR FROM sp.date) = ys.year
+)
+SELECT
+    date,
+    stock_symbol,
+    closing_price,
+    start_price,
+    cumulative_change
+FROM CumulativeChange
+ORDER BY stock_symbol, date;
+
+
+-- Calculate the day-over-day change in user count and the growth rate.
+WITH UserChange AS (
+    SELECT
+        activity_date,
+        user_count,
+        LAG(user_count) OVER (ORDER BY activity_date) AS previous_user_count
+    FROM daily_active_users
+),
+GrowthRates AS (
+    SELECT
+        activity_date,
+        user_count,
+        previous_user_count,
+        user_count - previous_user_count AS day_over_day_change,
+        CASE
+            WHEN previous_user_count IS NULL OR previous_user_count = 0 THEN NULL
+            ELSE (user_count - previous_user_count) / previous_user_count * 100
+        END AS growth_rate
+    FROM UserChange
+)
+SELECT
+    activity_date,
+    user_count,
+    previous_user_count,
+    day_over_day_change,
+    growth_rate
+FROM GrowthRates
+ORDER BY activity_date;
+
+
+-- Calculate the 95th percentile of response times for each device manufacturer.
+WITH ManufacturerResponseTimes AS (
+    SELECT
+        dt.manufacturer,
+        rt.response_time_ms
+    FROM response_times rt
+    JOIN device_types dt
+        ON rt.device_type_id = dt.device_type_id
+),
+Percentiles AS (
+    SELECT
+        manufacturer,
+        response_time_ms,
+        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time_ms) OVER (PARTITION BY manufacturer) AS percentile_95
+    FROM ManufacturerResponseTimes
+)
+SELECT DISTINCT
+    manufacturer,
+    percentile_95 AS percentile_95_response_time
+FROM Percentiles
+ORDER BY manufacturer;
+
+
+-- Identify the top 5 employees by sales amount in each department with their names.
+WITH RankedSales AS (
+    SELECT
+        es.employee_id,
+        e.employee_name,
+        es.department_id,
+        es.sales_amount,
+        ROW_NUMBER() OVER (PARTITION BY es.department_id ORDER BY es.sales_amount DESC) AS rank
+    FROM employee_sales es
+    JOIN employees e
+        ON es.employee_id = e.employee_id
+)
+SELECT
+    employee_id,
+    employee_name,
+    department_id,
+    sales_amount
+FROM RankedSales
+WHERE rank <= 5
+ORDER BY department_id, rank;
+
+
+-- Calculate each department's percentage contribution to the total company expenses.
+WITH TotalExpenses AS (
+    SELECT
+        SUM(expense_amount) AS total_expenses
+    FROM department_expenses
+),
+DepartmentContribution AS (
+    SELECT
+        department,
+        expense_amount,
+        (expense_amount / te.total_expenses) * 100 AS percentage_contribution
+    FROM department_expenses de
+    CROSS JOIN TotalExpenses te
+)
+SELECT
+    department,
+    expense_amount,
+    percentage_contribution
+FROM DepartmentContribution
+ORDER BY department;
+
+-- 1. Rank players within each tournament based on their scores, with ties receiving the same rank.
+WITH RankedScores AS (
+    SELECT
+        player_id,
+        tournament_id,
+        score,
+        RANK() OVER (PARTITION BY tournament_id ORDER BY score DESC) AS rank
+    FROM tournament_scores
+)
+SELECT
+    player_id,
+    tournament_id,
+    score,
+    rank
+FROM RankedScores
+ORDER BY tournament_id, rank;
+
+-- 2. Find employees who have been promoted (i.e., changed to a different position) within 6 months of starting their previous position.
+WITH PositionChanges AS (
+    SELECT
+        ep1.employee_id,
+        ep1.position AS old_position,
+        ep1.start_date AS old_start_date,
+        ep2.position AS new_position,
+        ep2.start_date AS new_start_date
+    FROM employee_positions ep1
+    JOIN employee_positions ep2
+        ON ep1.employee_id = ep2.employee_id
+        AND ep2.start_date > ep1.start_date
+        AND ep2.start_date <= ep1.start_date + INTERVAL '6 MONTH'
+        AND ep2.position != ep1.position
+)
+SELECT
+    employee_id,
+    old_position,
+    old_start_date,
+    new_position,
+    new_start_date
+FROM PositionChanges
+ORDER BY employee_id, old_start_date;
+
+-- 3. Display the number of new user signups for each day of the current month, along with the cumulative number of signups month-to-date.
+WITH DailySignups AS (
+    SELECT
+        signup_date,
+        COUNT(*) AS daily_signups
+    FROM user_signups
+    WHERE EXTRACT(MONTH FROM signup_date) = EXTRACT(MONTH FROM CURRENT_DATE)
+      AND EXTRACT(YEAR FROM signup_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+    GROUP BY signup_date
+),
+CumulativeSignups AS (
+    SELECT
+        signup_date,
+        daily_signups,
+        SUM(daily_signups) OVER (ORDER BY signup_date) AS cumulative_signups
+    FROM DailySignups
+)
+SELECT
+    signup_date,
+    daily_signups,
+    cumulative_signups
+FROM CumulativeSignups
+ORDER BY signup_date;
+
+-- 4. Assign a sequential number to each login for each user, ordered by timestamp.
+WITH SequentialLogins AS (
+    SELECT
+        user_id,
+        login_timestamp,
+        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login_timestamp) AS login_number
+    FROM user_logins
+)
+SELECT
+    user_id,
+    login_timestamp,
+    login_number
+FROM SequentialLogins
+ORDER BY user_id, login_timestamp;
+
+-- 5. Calculate the average day-over-day percentage change in closing price for each stock.
+WITH DailyChanges AS (
+    SELECT
+        stock_symbol,
+        stock_date,
+        closing_price,
+        LAG(closing_price) OVER (PARTITION BY stock_symbol ORDER BY stock_date) AS previous_closing_price
+    FROM stock_prices
+),
+PercentageChanges AS (
+    SELECT
+        stock_symbol,
+        stock_date,
+        (closing_price - previous_closing_price) / previous_closing_price * 100 AS daily_percentage_change
+    FROM DailyChanges
+    WHERE previous_closing_price IS NOT NULL
+)
+SELECT
+    stock_symbol,
+    AVG(daily_percentage_change) AS average_daily_percentage_change
+FROM PercentageChanges
+GROUP BY stock_symbol
+ORDER BY stock_symbol;
+
+-- 6. Calculate the moving average of transaction amounts for each customer over their last 3 transactions, but only for customers who have been signed up for more than a year.
+WITH EligibleCustomers AS (
+    SELECT
+        ci.customer_id
+    FROM customer_info ci
+    WHERE ci.signup_date <= CURRENT_DATE - INTERVAL '1 YEAR'
+),
+CustomerTransactions AS (
+    SELECT
+        ct.customer_id,
+        ct.transaction_date,
+        ct.transaction_amount,
+        ROW_NUMBER() OVER (PARTITION BY ct.customer_id ORDER BY ct.transaction_date DESC) AS transaction_rank
+    FROM customer_transactions ct
+    JOIN EligibleCustomers ec
+        ON ct.customer_id = ec.customer_id
+),
+MovingAverages AS (
+    SELECT
+        customer_id,
+        transaction_date,
+        AVG(transaction_amount) OVER (
+            PARTITION BY customer_id
+            ORDER BY transaction_date DESC
+            ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+        ) AS moving_avg
+    FROM CustomerTransactions
+    WHERE transaction_rank <= 3
+)
+SELECT
+    customer_id,
+    transaction_date,
+    moving_avg
+FROM MovingAverages
+ORDER BY customer_id, transaction_date;
+
+-- 7. Calculate the 7-day moving average of quantity sold for each product.
+WITH DailySales AS (
+    SELECT
+        sale_date,
+        product_id,
+        quantity_sold
+    FROM product_sales
+),
+MovingAverages AS (
+    SELECT
+        sale_date,
+        product_id,
+        quantity_sold,
+        AVG(quantity_sold) OVER (
+            PARTITION BY product_id
+            ORDER BY sale_date
+            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+        ) AS moving_avg
+    FROM DailySales
+)
+SELECT
+    sale_date,
+    product_id,
+    quantity_sold,
+    moving_avg
+FROM MovingAverages
+ORDER BY product_id, sale_date;
+
+-- 8. Calculate the difference between each sale and the largest sale in that customer's history.
+WITH MaxSales AS (
+    SELECT
+        customer_id,
+        MAX(sale_amount) AS max_sale_amount
+    FROM customer_sales
+    GROUP BY customer_id
+),
+SalesDifferences AS (
+    SELECT
+        cs.customer_id,
+        cs.sale_date,
+        cs.sale_amount,
+        ms.max_sale_amount,
+        ms.max_sale_amount - cs.sale_amount AS difference_from_max
+    FROM customer_sales cs
+    JOIN MaxSales ms
+        ON cs.customer_id = ms.customer_id
+)
+SELECT
+    customer_id,
+    sale_date,
+    sale_amount,
+    difference_from_max
+FROM SalesDifferences
+ORDER BY customer_id, sale_date;
+
+-- 9. Find the 75th percentile salary for each department.
+WITH SalaryRank AS (
+    SELECT
+        department,
+        salary,
+        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY salary) OVER (PARTITION BY department) AS percentile_75
+    FROM salary_data
+)
+SELECT DISTINCT
+    department,
+    percentile_75 AS salary_75th_percentile
+FROM SalaryRank
+ORDER BY department;
+
+-- 10. Show each campaign's percentage contribution to total conversions, ordered from highest to lowest.
+WITH TotalConversions AS (
+    SELECT
+        SUM(conversions) AS total_conversions
+    FROM campaign_conversions
+),
+CampaignContribution AS (
+    SELECT
+        campaign_id,
+        conversions,
+        (conversions / tc.total_conversions) * 100 AS percentage_contribution
+    FROM campaign_conversions cc
+    CROSS JOIN TotalConversions tc
+)
+SELECT
+    campaign_id,
+    conversions,
+    percentage_contribution
+FROM CampaignContribution
+ORDER BY percentage_contribution DESC;
+
+-- 11. Show each student's score in each subject along with their highest score across all subjects.
+WITH MaxScores AS (
+    SELECT
+        student_id,
+        MAX(score) AS highest_score
+    FROM student_scores
+    GROUP BY student_id
+)
+SELECT
+    ss.student_id,
+    ss.subject,
+    ss.score,
+    ms.highest_score
+FROM student_scores ss
+JOIN MaxScores ms
+    ON ss.student_id = ms.student_id
+ORDER BY ss.student_id, ss.subject;
+
