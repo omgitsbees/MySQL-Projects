@@ -1,0 +1,42 @@
+-- Get hackers with most submissions per date 
+SELECT submission_date, b.hacker_id, name
+INTO #top_daily_hackers
+FROM
+    (SELECT   submission_date, hacker_id,  count_submissions, 
+        RANK() OVER( PARTITION BY submission_date ORDER BY count_submissions DESC, hacker_id asc) AS submission_rank
+    FROM 
+        (SELECT submission_date, hacker_id, count(submission_id) as count_submissions
+        FROM Submissions
+        GROUP BY submission_date, hacker_id) AS a) AS b
+INNER JOIN Hackers h
+ON h.hacker_id = b.hacker_id
+WHERE submission_rank = 1
+
+-- Get # of hackers with atleast 1 submission for that day and prior days. 
+-- Get distinct hacker_submission days
+SELECT
+      hacker_id
+     ,submission_date
+    , count(  DISTINCT hacker_id) AS submitted
+INTO #hacker_days
+FROM Submissions S
+GROUP BY hacker_id, submission_date
+ORDER BY hacker_id
+
+-- Join on the #top daily hacker table 
+SELECT  b.submission_date, b.unique_hackers, tdh.hacker_id, tdh.name
+FROM 
+    -- Get only the rows where the hacker has submitted as many days as all days so far in competition
+    -- Then count hackers by day 
+   (SELECT submission_date, count(hacker_id) AS unique_hackers
+    FROM 
+       -- Get days submitted by date and hacker as well as count of days overall to date
+       (SELECT 
+            * , 
+            ROW_NUMBER() OVER (PARTITION BY hacker_id ORDER BY Submission_date) AS hacker_days_submitted, 
+            DENSE_RANK() OVER( ORDER BY submission_date) AS day_num
+        FROM #hacker_days) AS a
+    WHERE hacker_days_submitted = day_num
+    GROUP BY submission_date) AS b
+LEFT JOIN #top_daily_hackers AS  tdh
+ON tdh.submission_date = b.submission_date 
