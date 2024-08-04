@@ -1,0 +1,30 @@
+WITH daily_sales AS (
+    SELECT
+        date_sold,
+        SUM(CASE WHEN product = 'Cake' THEN amount_sold ELSE 0 END) AS cakes_sold,
+        SUM(CASE WHEN product = 'Pie' THEN amount_sold ELSE 0 END) AS pies_sold
+    FROM
+        desserts
+    GROUP BY
+        date_sold
+),
+sales_difference AS (
+    SELECT
+        date_sold,
+        ABS(cakes_sold - pies_sold) AS difference,
+        CASE
+            WHEN cakes_sold > pies_sold THEN 'Cake'
+            WHEN pies_sold > cakes_sold THEN 'Pie'
+            ELSE 'Equal'
+        END AS more_sold
+    FROM
+        daily_sales
+)
+SELECT
+    date_sold,
+    difference,
+    more_sold
+FROM
+    sales_difference
+ORDER BY
+    date_sold;
