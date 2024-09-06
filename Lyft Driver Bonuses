@@ -1,0 +1,18 @@
+SELECT 
+    driver_id,
+    total_rides,
+    CASE 
+        -- Tier 1: Fewer than 100 rides -> $0 bonus
+        WHEN total_rides < 100 THEN 0
+
+        -- Tier 2: 100 to 499 rides -> $100 bonus
+        WHEN total_rides >= 100 AND total_rides < 500 THEN 100
+
+        -- Tier 3: 500 to 999 rides -> $600 total bonus ($100 + $500)
+        WHEN total_rides >= 500 AND total_rides < 1000 THEN 600
+
+        -- Tier 4: 1000+ rides -> $1600 + $1,000 for each additional 1,000 rides
+        ELSE 
+            1600 + FLOOR((total_rides - 1000) / 1000) * 1000
+    END AS total_bonus
+FROM lyft_bonuses;
