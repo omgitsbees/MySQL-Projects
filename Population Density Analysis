@@ -1,0 +1,22 @@
+-- https://dataford.io/sql/Population-Density-Analysis?via=VENKATA
+
+WITH city_density AS (
+    SELECT 
+        city, 
+        country, 
+        population, 
+        area, 
+        ROUND(population / area) AS population_density
+    FROM cities_population
+    WHERE area > 0
+)
+
+-- Step 2: Select all cities ordered by population density (descending), and identify the min and max density
+SELECT *,
+       CASE
+           WHEN population_density = (SELECT MIN(population_density) FROM city_density) THEN 'Min Density'
+           WHEN population_density = (SELECT MAX(population_density) FROM city_density) THEN 'Max Density'
+           ELSE ''
+       END AS density_type
+FROM city_density
+ORDER BY population_density DESC;
