@@ -1,0 +1,98 @@
+-- This query retrieves the names of customers, the names of the products they bought, and the total amount of money they spent on each purchase made in the last 30 days.
+SELECT
+    c.customer_name,
+    p.product_name,
+    s.total_amount
+FROM Sales s    
+JOIN Customers c ON s.customer_id = c.customer_id -- Linking sales to customer information
+JOIN Products p ON s.product_id = p.product_id -- Linking sales to product information
+WHERE s.sale_date >= CURRENT_DATE - INTERVAL 30 DAY; -- Filtering to only show sales from the last 30 days
+
+-- This query calculates how much money each product category made in total over the past year.
+SELECT
+    p.category, 
+    SUM(s.total_amount) AS total_revenue -- Summing up all sales to get total revenue for each category
+FROM Sales s 
+JOIN Products p ON s.product_id = p.product_id -- Linking sales to product details
+WHERE s.sale_date >= CURRENT_DATE - INTERVAL 1 YEAR -- Limiting the data to sales made in the last year
+GROUP BY p.category; -- Grouping results by category to get one total for each
+
+-- This query finds all customers from the "West" region who made any purchases during the year 2023.
+SELECT DISTINCT -- Using DISTINCT to avoid showing the same customer multiple times
+    c.customer_name
+FROM Sales s 
+JOIN Customers c ON s.customer_id = c.customer_id -- Linking sales to customer information
+WHERE c.sales_region = 'West' -- Limiting to customers from the "West" region
+AND YEAR(s.sale_date) = 2023; -- Limiting to purchases made in the year 2023
+
+-- This query shows for each customer the total number of purchases they've made, the total quantity of products they've bought, and the total money they've spent.
+SELECT 
+    c.customer_name,
+    COUNT(s.sales_id) AS total_sales, -- Counting the total number of sales per customer
+    SUM(s.quantity) AS total_quantity_sold, -- Summing up the total quantity of items purchased
+    SUM(s.total_amount) AS total_revenue -- Summing up the total money spent by each customer
+FROM Sales s 
+JOIN Customers c ON s.customer_id = c.customer_id -- Linking sales to customer information
+GROUP BY c.customer_name; -- Grouping by customer so we get one result per customer
+
+-- This query identifies the top 3 customers who spent the most money in 2023.
+SELECT 
+    c.customer_name,
+    SUM(s.total_amount) AS total_revenue -- Summing up the total amount spent by each customer
+FROM Sales s 
+JOIN Customers c ON s.customer_id = c.customer_id -- Linking sales to customer information
+WHERE YEAR(s.sale_date) = 2023 -- Limiting to purchases made in the year 2023
+GORUP BY c.customer_name -- Grouping by customer 
+ORDER BY total_revenue DESC -- Sorting by revenue from highest to lowest 
+LIMIT 3; -- Limiting the result ot the top 3 customers
+
+-- This query ranks products by how many units were sold in 2023, with the most popular product ranked highest.
+SELECT 
+    p.product_name,
+    SUM(s.quantity) AS total_quantity_sold, -- Summing up the total quantity of each product sold
+    RANK() OVER (ORDER BY SUM(s.quantity) DESC) AS rank -- Ranking products based on the quantity sold
+FROM Sales s 
+JOIN Products p ON s.product_id = p.product_id -- Linking sales to product details 
+WHERE YEAR(s.sale_date) = 2023 -- Limiting to sales made in 2023
+GROUP BY p.product_name; -- Grouping by product name
+
+-- This query labels each customer as "New" if they signed up in the last 6 months, or "Existing" if they signed up earlier.
+SELECT
+    c.customer_name,
+    c.sales_region, 
+    CASE 
+        WHEN c.sign_up_date >= CURRENT_DATE - INTERVAL 6 MONTH THEN 'New' -- Labeling as "New" if signed up in the last 6 months
+        ELSE 'Existing' -- Labeling as "Existing" for older sign-ups
+    END AS customer_category -- Assigning the category based on the condition above
+FROM Customers C; 
+
+-- This query shows the total sales for each month in the last 12 months.
+SELECT 
+    DATE_FORMAT(s.sale_date, '%Y-%m') AS month_year, -- Formatting the sale date to display just the year and month
+    SUM(s.total_amount) AS total_sales -- Summing up total sales for each month
+FROM Sales s 
+WHERE s.sale_date >= CURRENT_DATE - INTERVAL 1 YEAR -- Limiting to sales made in the last 12 months
+GROUP BY month_year -- Grouping by month and year 
+GROUP BY month_year; -- Sorting results by month and year 
+
+-- This query finds product categories that made more than $50,000 in total sales in the last 6 months.
+SELECT 
+    p.category, 
+    SUM(s.total_amount) AS total_revenue -- Summing up the total revenue for each category
+FROM Sales s 
+JOIN Products p ON s.product_id = p.product_id -- Linking sales to product details 
+WHERE s.sale_date >= CURRENT_DATE - INTERVAL 6 MONTH -- Limiting to sales made in the last 6 months 
+GROUP BY p.category -- Grouping by product category 
+HAVING total_revenue > 50000; -- Filtering to only show categories that made over $50,000
+
+-- This query checks if there are any sales where the total amount charged is not equal to the quantity sold multiplied by the product price, which could indicate an error.
+SELECT 
+    s.sales_id,
+    s.customer_id, 
+    s.product_id, 
+    s.quantity,
+    s.total_amount, 
+    (s.quantity * p.price AS expected_amount) -- Calculating the expected amount (quantity * price)
+FROM Sales s 
+JOIN Products p ON s.product_id = p.product_id -- Linking sales to product details 
+WHERE s.total_amount != s.quantity * p.price; -- Finding cases where the actual total doesn't match the expected value
